@@ -9,14 +9,11 @@ from math import cos, sin, acos, degrees, radians
 
 import numpy as np
 
-from sarah.auto_function import GeneralGetter, AutoMathFunctionMeta, LoopCallException
+from sarah.auto_function import GeneralGetter, AutoMathFunction
 def vector(*args):
     return np.array(args, dtype=np.double)
 
 class Sarah_ori(GeneralGetter):
-    def __init__(self):
-        super(Sarah_ori, self).__init__()
-        self.value = vector(0, 0)
     pass
 
 class Sarah_pt_a(GeneralGetter):
@@ -114,50 +111,14 @@ class Sarah_arm_b(GeneralGetter):
         return np.cross(vec_bo, vec_ba) / len_ba
 
         
-class GasSpring(object):
-    __metaclass__ = AutoMathFunctionMeta
-    
-    def show_status(self):
-        print self.status()
-    
-    def status(self):
-        result = "property status:\n"
-        max_name_len = self.get_max_math_property_names_len()
-        result_head = "\t%" + str(max_name_len) + "s: "
-
-        result += result_head % "(PUEV" + "part of unspecified necessary values)\n"   
-
-        for name in self.get_math_property_names():
-            result += result_head % name
-            try:
-                value = getattr(self, name)
-            except LoopCallException as e:
-                if(len(e.lack_value_names())) > 0:
-                    result += "PUEV" + str(e.lack_value_names())
-                else:
-                    result += "unspecified basic value"
-            except AttributeError as e:
-                result += "ERROR! " + e.message
-            else:
-                result += str(value)
-            result += "\n"
-        return result
-
-    def get_math_property_names(self):
-        return self.math_property_names
-    
-    def get_max_math_property_names_len(self):
-        result = 0
-        for name in self.get_math_property_names():
-            name_len = len(name)
-            if name_len > result:
-                result = name_len
-        return result  
+class GasSpring(AutoMathFunction):
+    pass
 
 if __name__ == '__main__':
     gs = GasSpring()
     print "haven't set any property"
     gs.show_status()
+    gs.ori=vector(0,0)
     gs.pt_a = vector(20, -5)
     gs.alpha_b = 0
     gs.alpha_delta = radians(80)

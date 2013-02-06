@@ -29,61 +29,67 @@ class LoopCallException(Exception):
     def __str__(self):
         return self.source_name() + ' needs value of: ' + self.lack_value_name()
 
-class GeneralSetter(object):
-    def __init__(self, getter):
-        self.getter = getter;
-    def __call__(self, gas_spring, value):
-        self.getter.value = value
-
 class GeneralGetter(object):
 
     def __init__(self):
-        self.being_a_function = False
-        self.value = None
         self.find_funcs()
     
     def find_funcs(self):
-        name_and_methods=inspect.getmembers(self.__class__, predicate=inspect.ismethod)
-        self._funcs=[]
-        for name,method in name_and_methods:
-            if name.find(Constants.COMMON_METHOD_PRE())==0:
+        name_and_methods = inspect.getmembers(self.__class__, predicate=inspect.ismethod)
+        self._funcs = []
+        for name, method in name_and_methods:
+            if name.find(Constants.COMMON_METHOD_PRE()) == 0:
                 self._funcs.append(method)
     
-    def self_and_setter(self):
-        return (self, GeneralSetter(self))
+    def self_and_setter(self, value_index):
+        self.value_index = value_index
+        return (self, self.setter_func)
+    
+    def setter_func(self, gas_spring, value):
+        gas_spring._math_property_datas[self.value_index] = value
+    
+    def get_value(self, gas_spring):
+        return gas_spring._math_property_datas[self.value_index]
+    
+    def set_being_function(self, gas_spring, value):
+        gas_spring._math_property_as_function_list[self.value_index] = value
+    
+    def is_being_function(self, gas_spring):
+        return gas_spring._math_property_as_function_list[self.value_index]
     
     def __call__(self, gas_spring):
-        if not self.value is None:
-            return self.value
-        elif self.being_a_function:
+        value = self.get_value(gas_spring)
+        if not value is None:
+            return value
+        elif self.is_being_a_function(gas_spring):
             raise LoopCallException(self)
         else:
-            self.being_a_function = True
+            self.set_being_a_function(gas_spring, True)
             try:
                 result = self.main_func(gas_spring)
             except LoopCallException as e:
                 if e.source_obj is None:
-                    e.source_obj=self
+                    e.source_obj = self
                 elif self is not e.source_obj:
                     e.lack_value_objects.add(self)
                 raise e
             finally:    
-                self.being_a_function = False
+                self.set_being_a_function(gas_spring, False)
             return result
     
-    def main_func(self,gas_spring):
-        size=len(self._funcs)
-        if size==0:
+    def main_func(self, gas_spring):
+        size = len(self._funcs)
+        if size == 0:
             raise LoopCallException()
-        i=0
+        i = 0
         for func in self._funcs:
             try:
-                return func(self,gas_spring)
+                return func(self, gas_spring)
             except LoopCallException as e:
-                if i>=size-1:
+                if i >= size - 1:
                     raise e
             finally:
-                i+=1
+                i += 1
     
     def yufunc(self, gas_spring):
         return self.__call__(gas_spring)
@@ -99,13 +105,61 @@ class AutoMathFunctionMeta(type):
     def __new__(self, cls_name, bases, attrs):
         new_cls = type.__new__(self, cls_name, bases, attrs)
         all_property_classes = self.get_all_property_classes(new_cls)
+        i = 0
         for _name, func_cls in all_property_classes:
-            setattr(new_cls, func_cls.get_math_name(), property(*(func_cls().self_and_setter())))
-        new_cls.math_property_names=[func_cls.get_math_name() for _name,func_cls in all_property_classes]     
+            setattr(new_cls, func_cls.get_math_name(), property(*(func_cls().self_and_setter(i))))
+            i += 1
+        new_cls.math_property_names = [func_cls.get_math_name() for _name, func_cls in all_property_classes]     
         return new_cls
 
     @classmethod
-    def get_all_property_classes(cls,new_cls):
+    def get_all_property_classes(cls, new_cls):
         clsmembers = inspect.getmembers(sys.modules[new_cls.__module__], inspect.isclass)
         result = [name_cls for name_cls in clsmembers if name_cls[0].find(Constants.COMMON_REAL_CLASS_PRE()) == 0]
-        return result  
+        return result
+    
+class AutoMathFunction(object):
+    __metaclass__ = AutoMathFunctionMeta
+    
+    def __init__(self):
+        self._math_property_datas = [None for _i in xrange(len(self.math_property_names))]
+        self._math_property_as_function_list = [False for _i in xrange(len(self._math_property_as_function_datas))]
+    
+    def show_status(self):
+        print self.status()
+    
+    def status(self):
+        result = "property status:\n"
+        max_name_len = self.get_max_math_property_names_len()
+        result_head = "\t%" + str(max_name_len) + "s: "
+
+        result += result_head % "(PUEV" + "part of unspecified necessary values)\n"   
+
+        for name in self.get_math_property_names():
+            result += result_head % name
+            try:
+                value = getattr(self, name)
+            except LoopCallException as e:
+                if(len(e.lack_value_names())) > 0:
+                    result += "PUEV" + str(e.lack_value_names())
+                else:
+                    result += "unspecified basic value"
+            except AttributeError as e:
+                result += "ERROR! " + e.message
+            else:
+                result += str(value)
+            result += "\n"
+        return result
+    
+    @classmethod   
+    def get_math_property_names(cls):
+        return cls.math_property_names
+    
+    @classmethod
+    def get_max_math_property_names_len(cls):
+        result = 0
+        for name in cls.get_math_property_names():
+            name_len = len(name)
+            if name_len > result:
+                result = name_len
+        return result
