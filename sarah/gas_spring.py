@@ -14,6 +14,9 @@ def vector(*args):
     return np.array(args, dtype=np.double)
 
 class Sarah_ori(GeneralGetter):
+    @classmethod
+    def default(cls):
+        return vector(0,0)
     pass
 
 class Sarah_pt_a(GeneralGetter):

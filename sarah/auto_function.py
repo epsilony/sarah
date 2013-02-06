@@ -51,10 +51,10 @@ class GeneralGetter(object):
     def get_value(self, gas_spring):
         return gas_spring._math_property_datas[self.value_index]
     
-    def set_being_function(self, gas_spring, value):
+    def set_being_a_function(self, gas_spring, value):
         gas_spring._math_property_as_function_list[self.value_index] = value
     
-    def is_being_function(self, gas_spring):
+    def is_being_a_function(self, gas_spring):
         return gas_spring._math_property_as_function_list[self.value_index]
     
     def __call__(self, gas_spring):
@@ -95,6 +95,10 @@ class GeneralGetter(object):
         return self.__call__(gas_spring)
     
     @classmethod
+    def default(cls):
+        return None
+    
+    @classmethod
     def get_math_name(cls):
         class_name = cls.__name__
         if class_name.find(Constants.COMMON_REAL_CLASS_PRE()) != 0:
@@ -106,7 +110,9 @@ class AutoMathFunctionMeta(type):
         new_cls = type.__new__(self, cls_name, bases, attrs)
         all_property_classes = self.get_all_property_classes(new_cls)
         i = 0
+        new_cls.default_property_values=[]
         for _name, func_cls in all_property_classes:
+            new_cls.default_property_values.append(func_cls.default())
             setattr(new_cls, func_cls.get_math_name(), property(*(func_cls().self_and_setter(i))))
             i += 1
         new_cls.math_property_names = [func_cls.get_math_name() for _name, func_cls in all_property_classes]     
@@ -122,8 +128,8 @@ class AutoMathFunction(object):
     __metaclass__ = AutoMathFunctionMeta
     
     def __init__(self):
-        self._math_property_datas = [None for _i in xrange(len(self.math_property_names))]
-        self._math_property_as_function_list = [False for _i in xrange(len(self._math_property_as_function_datas))]
+        self._math_property_datas = list(self.default_property_values)
+        self._math_property_as_function_list = [False for _i in xrange(len(self._math_property_datas))]
     
     def show_status(self):
         print self.status()
