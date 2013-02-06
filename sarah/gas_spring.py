@@ -9,41 +9,41 @@ from math import cos, sin, acos, degrees, radians
 
 import numpy as np
 
-from sarah.auto_function import GeneralGetter, AutoMathFunction
+from sarah.auto_function import AutoFunctionPropertyGetterSetterFactory, AutoMathFunction
 def vector(*args):
     return np.array(args, dtype=np.double)
 
-class Sarah_ori(GeneralGetter):
+class Sarah_ori(AutoFunctionPropertyGetterSetterFactory):
     @classmethod
     def default(cls):
-        return vector(0,0)
+        return vector(0, 0)
     pass
 
-class Sarah_pt_a(GeneralGetter):
+class Sarah_pt_a(AutoFunctionPropertyGetterSetterFactory):
     pass
 
-class Sarah_len_ao(GeneralGetter):
+class Sarah_len_ao(AutoFunctionPropertyGetterSetterFactory):
     def yufunc(self, gas_spring):
         vec = gas_spring.ori - gas_spring.pt_a
         return np.dot(vec, vec) ** 0.5
 
-class Sarah_theta(GeneralGetter):
+class Sarah_theta(AutoFunctionPropertyGetterSetterFactory):
     def yufunc(self, gas_spring):
         vec = gas_spring.pt_a - gas_spring.ori
         return np.arctan2(vec[1], vec[0])
 
-class Sarah_pt_b(GeneralGetter):
+class Sarah_pt_b(AutoFunctionPropertyGetterSetterFactory):
     def yufunc(self, gas_spring):
         r = gas_spring.len_brd
         alpha_b = gas_spring.alpha_b
         return np.array((r * cos(alpha_b), r * sin(alpha_b))) + gas_spring.ori
 
-class Sarah_len_brd(GeneralGetter):
+class Sarah_len_brd(AutoFunctionPropertyGetterSetterFactory):
     def yufunc(self, gas_spring):
         vec = gas_spring.pt_c - gas_spring.ori
         return np.dot(vec, vec) ** 0.5
 
-class Sarah_alpha_b(GeneralGetter):
+class Sarah_alpha_b(AutoFunctionPropertyGetterSetterFactory):
     def yufunc(self, gas_spring):
         return gas_spring.alpha_c - gas_spring.alpha_delta
         
@@ -60,7 +60,7 @@ class Sarah_alpha_b(GeneralGetter):
         angle_aob = acos((len_spr_b ** 2 - r ** 2 - d ** 2) / (2 * d * r))
         return  theta + angle_aob  
     
-class Sarah_len_spr_b(GeneralGetter):
+class Sarah_len_spr_b(AutoFunctionPropertyGetterSetterFactory):
     def yufunc(self, gas_spring):
         vec = gas_spring.pt_b - gas_spring.pt_a
         return np.dot(vec, vec) ** 0.5
@@ -68,13 +68,13 @@ class Sarah_len_spr_b(GeneralGetter):
     def yufunc_2(self, gas_spring):
         return gas_spring.len_spr_c - gas_spring.len_spr_delta
 
-class Sarah_pt_c(GeneralGetter):
+class Sarah_pt_c(AutoFunctionPropertyGetterSetterFactory):
     def yufunc(self, gas_spring):
         r = gas_spring.len_brd
         alpha_c = gas_spring.alpha_c
         return np.array((r * cos(alpha_c), r * sin(alpha_c)), dtype=np.double)
 
-class Sarah_len_spr_c(GeneralGetter):
+class Sarah_len_spr_c(AutoFunctionPropertyGetterSetterFactory):
     def yufunc(self, gas_spring):
         vec = gas_spring.pt_c - gas_spring.pt_a
         return np.dot(vec, vec) ** 0.5
@@ -82,11 +82,11 @@ class Sarah_len_spr_c(GeneralGetter):
     def yufunc_2(self, gas_spring):
         return gas_spring.len_spr_b + gas_spring.len_spr_delta
 
-class Sarah_alpha_delta(GeneralGetter):
+class Sarah_alpha_delta(AutoFunctionPropertyGetterSetterFactory):
     def yufunc(self, gas_spring):
         return gas_spring.alpha_c - gas_spring.alpha_b
 
-class Sarah_alpha_c(GeneralGetter):
+class Sarah_alpha_c(AutoFunctionPropertyGetterSetterFactory):
     def yufunc(self, gas_spring):
         return gas_spring.alpha_b + gas_spring.alpha_delta     
     
@@ -102,11 +102,11 @@ class Sarah_alpha_c(GeneralGetter):
         angle_aoc = acos((len_spr_c ** 2 - d ** 2 - r ** 2) / (2 * d * r))
         return theta + angle_aoc
 
-class Sarah_len_spr_delta(GeneralGetter):
+class Sarah_len_spr_delta(AutoFunctionPropertyGetterSetterFactory):
     def yufunc(self, gas_spring):
         return gas_spring.len_spr_c - gas_spring.len_spr_b
 
-class Sarah_arm_b(GeneralGetter):    
+class Sarah_arm_b(AutoFunctionPropertyGetterSetterFactory):    
     def yufunc(self, gas_spring):
         vec_bo = gas_spring.ori - gas_spring.pt_b
         vec_ba = gas_spring.pt_a - gas_spring.pt_b
@@ -121,11 +121,9 @@ if __name__ == '__main__':
     gs = GasSpring()
     print "haven't set any property"
     gs.show_status()
-    gs.ori=vector(0,0)
     gs.pt_a = vector(20, -5)
     gs.alpha_b = 0
     gs.alpha_delta = radians(80)
     gs.len_spr_c = 205
     gs.len_brd = 200
     gs.show_status()
-
