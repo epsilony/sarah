@@ -32,8 +32,8 @@ class LoopCallException(Exception):
 
 class AutoFunctionPropertyBack(object):
 
-    def __init__(self,value_index):
-        self.value_index=value_index
+    def __init__(self, value_index):
+        self.value_index = value_index
         self.find_funcs()
     
     def get_setter_and_getter(self):
@@ -150,6 +150,76 @@ class AutoMathFunctionMeta(type):
         clsmembers = inspect.getmembers(sys.modules[new_cls.__module__], inspect.isclass)
         result = [name_cls for name_cls in clsmembers if name_cls[0].find(AutoFunctionConstants.COMMON_REAL_CLASS_PRE()) == 0]
         return result
+
+class AutoFunctionPropertyStatus(object):
+    def __init__(self, property_back, inst):
+        self.property_back = property_back
+        self.inst = inst
+    
+    def get_head_name_value_string(self):
+        property_back = self.property_back
+        inst = self.inst
+        head = None
+        name = property_back.get_property_name()
+        value_str = None
+        if property_back.is_source(inst):
+            head = self.get_source_head_string()
+            value_str = str(property_back(inst))
+            if property_back.is_conflicting_with_other_source(inst):
+                value_str += " **CONFILCTING with other source properties**"
+        else:
+            try:
+                value = property_back(inst)
+                value_str = str(value)
+                head = self.get_function_value_head_string()
+            except LoopCallException as e:
+                if(len(e.lack_value_names())) > 0:
+                    head = self.get_lack_of_dependence_value_head_string()
+                    value_str = str(e.lack_value_names())
+                else:
+                    head = self.get_unspecified_basis_value_head_string()
+                    value_str = "unspecified basic source property"
+            except Exception as e:
+                value_str = "ERROR! " + e.message
+        head = self.get_head_string_template() % head
+        return (head, name, value_str)
+        
+    @classmethod
+    def get_source_head_string(cls):
+        return "SRC"
+    
+    @classmethod
+    def get_lack_of_dependence_value_head_string(cls):
+        return "LDEP"
+    
+    @classmethod
+    def get_function_value_head_string(cls):
+        return "F"
+    
+    @classmethod
+    def get_max_head_length(cls):
+        return 4;
+    
+    @classmethod
+    def get_head_string_template(cls):
+        return "%4s"
+    
+    @classmethod
+    def get_unspecified_basis_value_head_string(cls):
+        return "USPS"
+    
+    @classmethod
+    def get_conflict_post_string(cls):
+        return 'CONFILCTING with other value sources'
+    
+    @classmethod
+    def get_head_and_instructions(cls):
+        result = []
+        result.append([cls.get_source_head_string(), "property value as source"])
+        result.append([cls.get_lack_of_dependence_value_head_string(), "can't get value,"])
+        result.append(["","part of the absent necessary property is shown as value"])
+        result.append([cls.get_function_value_head_string(), "a function value"])
+        return result
     
 class AutoFunction(object):
     __metaclass__ = AutoMathFunctionMeta
@@ -158,48 +228,32 @@ class AutoFunction(object):
         self._auto_func_property_datas = list(self.default_auto_func_property_values)
         self._auto_func_property_as_functions = [False for _i in xrange(len(self._auto_func_property_datas))]
     def show_status(self):
-        print self.status()
+        print self.status_str()
     
-    def status(self):
+    @classmethod
+    def get_status_str_gap_len(cls):
+        return 2
+    
+    def status_str(self):
         result = self.__class__.__name__ + " auto math function property status:\n"
-        max_name_len = self.get_max_math_property_names_len()
-        result_head = "%" + str(8 + max_name_len) + "s: "
-        head_post = str(max_name_len) + "s: "
-        ori_result_head = "| SRC|  %" + head_post
-        punv_result_head = "|PUNV|  %" + head_post
-        unsp_result_head = "|****|  %" + head_post
-        result += result_head % "(|PUNV|" + "part of unspecified necessary values)\n"   
-        result += result_head % "(| SRC|" + "source values)\n" 
-        result += "="*21 + "\n"  
-        i = 0
-        for property_back in self.get_auto_function_property_backs():
-            name = property_back.get_property_name()
-            head_str = None
-            value_str = None
-            try:
-                value = property_back(self)
-                value_str = str(value)
-                if property_back.is_source(self):
-                    head_str = ori_result_head % name
-                    if property_back.is_conflicting_with_other_source(self):
-                        value_str += "  *CONFILCTING WITH OTHER SOURCE*"
-                else:
-                    head_str = result_head % name
-            except LoopCallException as e:
-                if(len(e.lack_value_names())) > 0:
-                    head_str = punv_result_head % name
-                    value_str = str(e.lack_value_names())
-                else:
-                    head_str = unsp_result_head % name
-                    value_str = "unspecified basic source value"
-            except Exception as e:
-                result += "ERROR! " + e.message
-            
-            result += head_str + value_str
-                
-            result += "\n"
-            i += 1
+        head_len = AutoFunctionPropertyStatus.get_max_head_length()
+        head_instructions = AutoFunctionPropertyStatus.get_head_and_instructions()
+        gap_len = self.get_status_str_gap_len()
+        name_len = self.get_max_math_property_names_len()        
+        instruction_template = "%" + str(2+head_len + gap_len + name_len) + "s: %s\n"
+        for head, instr in head_instructions:
+            result += instruction_template % (head, instr)
+        result += "="*(2+head_len+name_len+gap_len) + "\n"  
+
+        status_template = "|%" + str(head_len) + "s|%" + str(gap_len + name_len) + "s: %s\n"
+        for property_status in self.get_auto_function_property_status():
+            head, name, value_str = property_status.get_head_name_value_string()
+            result += status_template % (head, name, value_str)
         return result
+    
+    def get_auto_function_property_status(self):
+        return [AutoFunctionPropertyStatus(property_back, self) 
+                for property_back in self.get_auto_function_property_backs()]
     
     @classmethod   
     def get_auto_function_property_names(cls):
