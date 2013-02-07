@@ -35,16 +35,17 @@ class AutoFunctionPropertyGetterSetterFactory(object):
     def __init__(self):
         self.find_funcs()
     
+    def produce_setter_and_getter(self, value_index):
+        self.value_index = value_index
+        return (self, self.setter_func)
+    
     def find_funcs(self):
         name_and_methods = inspect.getmembers(self.__class__, predicate=inspect.ismethod)
         self._funcs = []
         for name, method in name_and_methods:
             if name.find(AutoFunctionConstants.COMMON_METHOD_PRE()) == 0:
-                self._funcs.append(method)
-    
-    def produce_setter_and_getter(self, value_index):
-        self.value_index = value_index
-        return (self, self.setter_func)
+                self._funcs.append(method)    
+        self._last_func_index = 0
     
     def setter_func(self, inst, value):
         inst._math_property_datas[self.value_index] = value
@@ -82,10 +83,14 @@ class AutoFunctionPropertyGetterSetterFactory(object):
         size = len(self._funcs)
         if size == 0:
             raise LoopCallException()
-        i = 0
-        for func in self._funcs:
+        start = self._last_func_index
+        for i in xrange(size):
+            func_index = (i + start) % size
+            func = self._funcs[func_index]
             try:
-                return func(self, inst)
+                value = func(self, inst)
+                self._last_func_index = func_index
+                return value
             except LoopCallException as e:
                 if i >= size - 1:
                     raise e
