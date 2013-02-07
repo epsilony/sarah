@@ -99,6 +99,7 @@ class Sarah_alpha_c(AutoFunctionPropertyGetterSetterFactory):
         r = gas_spring.len_brd
         d = gas_spring.len_ao
         theta = gas_spring.theta
+        
         angle_aoc = acos((len_spr_c ** 2 - d ** 2 - r ** 2) / (2 * d * r))
         return theta + angle_aoc
 
@@ -121,9 +122,8 @@ if __name__ == '__main__':
     gs = GasSpring()
     print "haven't set any property"
     gs.show_status()
-    gs.pt_a = vector(20, -5)
-    gs.alpha_b = 0
-    gs.alpha_delta = radians(80)
-    gs.len_spr_c = 205
+    gs.pt_a = vector(40, -5)
     gs.len_brd = 200
+    gs.len_spr_b = 170
+    gs.len_spr_c = 210
     gs.show_status()

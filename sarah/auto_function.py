@@ -141,26 +141,41 @@ class AutoMathFunction(object):
         print self.status()
     
     def status(self):
-        result = "property status:\n"
+        result = self.__class__.__name__ + " auto math function property status:\n"
         max_name_len = self.get_max_math_property_names_len()
-        result_head = "\t%" + str(max_name_len) + "s: "
-
-        result += result_head % "(PUNV" + "part of unspecified necessary values)\n"   
-
+        result_head = "%" + str(8 + max_name_len) + "s: "
+        head_post = str(max_name_len) + "s: "
+        ori_result_head = "| SRC|  %" + head_post
+        punv_result_head = "|PUNV|  %" + head_post
+        unsp_result_head = "|****|  %" + head_post
+        result += result_head % "(|PUNV|" + "part of unspecified necessary values)\n"   
+        result += result_head % "(| SRC|" + "source values)\n" 
+        result += "="*21 + "\n"  
+        i = 0
         for name in self.get_math_property_names():
-            result += result_head % name
+            head_str = None
+            value_str = None
             try:
                 value = getattr(self, name)
+                value_str = str(value)
+                if self._math_property_datas[i] != None:
+                    head_str = ori_result_head % name
+                else:
+                    head_str = result_head % name
             except LoopCallException as e:
                 if(len(e.lack_value_names())) > 0:
-                    result += "PUEV" + str(e.lack_value_names())
+                    head_str = punv_result_head % name
+                    value_str = str(e.lack_value_names())
                 else:
-                    result += "unspecified basic value"
+                    head_str = unsp_result_head % name
+                    value_str = "unspecified basic source value"
             except AttributeError as e:
                 result += "ERROR! " + e.message
-            else:
-                result += str(value)
+            
+            result += head_str + value_str
+                
             result += "\n"
+            i += 1
         return result
     
     @classmethod   
