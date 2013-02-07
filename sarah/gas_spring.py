@@ -9,7 +9,7 @@ from math import cos, sin, acos, degrees, radians
 
 import numpy as np
 
-from sarah.auto_function import AutoFunctionPropertyBack, AutoMathFunction
+from sarah.auto_function import AutoFunctionPropertyBack, AutoFunction
 def vector(*args):
     return np.array(args, dtype=np.double)
 
@@ -115,7 +115,7 @@ class Sarah_arm_b(AutoFunctionPropertyBack):
         return np.cross(vec_bo, vec_ba) / len_ba
 
         
-class GasSpring(AutoMathFunction):
+class GasSpring(AutoFunction):
     pass
 
 if __name__ == '__main__':

@@ -151,7 +151,7 @@ class AutoMathFunctionMeta(type):
         result = [name_cls for name_cls in clsmembers if name_cls[0].find(AutoFunctionConstants.COMMON_REAL_CLASS_PRE()) == 0]
         return result
     
-class AutoMathFunction(object):
+class AutoFunction(object):
     __metaclass__ = AutoMathFunctionMeta
     
     def __init__(self):
