@@ -22,15 +22,15 @@ class LoopCallException(Exception):
         self.lack_value_objects = set()
     
     def lack_value_names(self):
-        return [obj.get_math_name() for obj in self.lack_value_objects]
+        return [obj.get_property_name() for obj in self.lack_value_objects]
     
     def source_name(self):
-        return self.source_obj.get_math_name()
+        return self.source_obj.get_property_name()
     
     def __str__(self):
         return self.source_name() + ' needs value of: ' + self.lack_value_name()
 
-class AutoFunctionPropertyGetterSetterFactory(object):
+class AutoFunctionPropertyBack(object):
 
     def __init__(self):
         self.find_funcs()
@@ -48,17 +48,35 @@ class AutoFunctionPropertyGetterSetterFactory(object):
         self._last_func_index = 0
     
     def setter_func(self, inst, value):
-        inst._math_property_datas[self.value_index] = value
+        inst._auto_func_property_datas[self.value_index] = value
     
     def get_value(self, inst):
-        return inst._math_property_datas[self.value_index]
+        return inst._auto_func_property_datas[self.value_index]
     
     def set_being_a_function(self, inst, value):
-        inst._math_property_as_function_list[self.value_index] = value
+        inst._auto_func_property_as_functions[self.value_index] = value
     
     def is_being_a_function(self, inst):
-        return inst._math_property_as_function_list[self.value_index]
+        return inst._auto_func_property_as_functions[self.value_index]
     
+    def is_source(self, inst):
+        return self.get_value(inst) != None
+    
+    def is_conflicting_with_other_source(self,inst):
+        if not self.is_source(inst):
+            raise ValueError()
+        backup_value=self.get_value(inst)
+        self.setter_func(inst, None)
+        result=False
+        try:
+            self.__call__(inst)
+            result=True
+        except LoopCallException:
+            result= False
+        finally:
+            self.setter_func(inst,backup_value)
+            return result      
+        
     def __call__(self, inst):
         value = self.get_value(inst)
         if not value is None:
@@ -105,7 +123,7 @@ class AutoFunctionPropertyGetterSetterFactory(object):
         return None
     
     @classmethod
-    def get_math_name(cls):
+    def get_property_name(cls):
         class_name = cls.__name__
         if class_name.find(AutoFunctionConstants.COMMON_REAL_CLASS_PRE()) != 0:
             raise ValueError('class name should begin with"' + AutoFunctionConstants.COMMON_REAL_CLASS_PRE() + '"')
@@ -116,12 +134,15 @@ class AutoMathFunctionMeta(type):
         new_cls = type.__new__(self, cls_name, bases, attrs)
         all_property_classes = self.get_all_property_classes(new_cls)
         i = 0
-        new_cls.default_property_values = []
-        for _name, func_cls in all_property_classes:
-            new_cls.default_property_values.append(func_cls.default())
-            setattr(new_cls, func_cls.get_math_name(), property(*(func_cls().produce_setter_and_getter(i))))
+        new_cls.default_auto_func_property_values = []
+        new_cls.auto_func_property_backs = []
+        for _name, property_cls in all_property_classes:
+            new_cls.default_auto_func_property_values.append(property_cls.default())
+            property_name=property_cls.get_property_name()
+            property_back = property_cls()
+            new_cls.auto_func_property_backs.append(property_back)
+            setattr(new_cls, property_name, property(*(property_back.produce_setter_and_getter(i))))
             i += 1
-        new_cls.math_property_names = [func_cls.get_math_name() for _name, func_cls in all_property_classes]     
         return new_cls
 
     @classmethod
@@ -134,8 +155,8 @@ class AutoMathFunction(object):
     __metaclass__ = AutoMathFunctionMeta
     
     def __init__(self):
-        self._math_property_datas = list(self.default_property_values)
-        self._math_property_as_function_list = [False for _i in xrange(len(self._math_property_datas))]
+        self._auto_func_property_datas = list(self.default_auto_func_property_values)
+        self._auto_func_property_as_functions = [False for _i in xrange(len(self._auto_func_property_datas))]
     
     def show_status(self):
         print self.status()
@@ -152,14 +173,17 @@ class AutoMathFunction(object):
         result += result_head % "(| SRC|" + "source values)\n" 
         result += "="*21 + "\n"  
         i = 0
-        for name in self.get_math_property_names():
+        for property_back in self.get_auto_function_property_backs():
+            name=property_back.get_property_name()
             head_str = None
             value_str = None
             try:
-                value = getattr(self, name)
+                value = property_back(self)
                 value_str = str(value)
-                if self._math_property_datas[i] != None:
+                if property_back.is_source(self):
                     head_str = ori_result_head % name
+                    if property_back.is_conflicting_with_other_source(self):
+                        value_str+= "  *CONFILCTING WITH OTHER SOURCE*"
                 else:
                     head_str = result_head % name
             except LoopCallException as e:
@@ -169,7 +193,7 @@ class AutoMathFunction(object):
                 else:
                     head_str = unsp_result_head % name
                     value_str = "unspecified basic source value"
-            except AttributeError as e:
+            except Exception as e:
                 result += "ERROR! " + e.message
             
             result += head_str + value_str
@@ -179,13 +203,17 @@ class AutoMathFunction(object):
         return result
     
     @classmethod   
-    def get_math_property_names(cls):
-        return cls.math_property_names
+    def get_auto_function_property_names(cls):
+        return [property_back.get_property_name() for property_back in cls.auto_func_property_backs]
+    
+    @classmethod
+    def get_auto_function_property_backs(cls):
+        return cls.auto_func_property_backs
     
     @classmethod
     def get_max_math_property_names_len(cls):
         result = 0
-        for name in cls.get_math_property_names():
+        for name in cls.get_auto_function_property_names():
             name_len = len(name)
             if name_len > result:
                 result = name_len
