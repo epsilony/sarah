@@ -32,11 +32,11 @@ class LoopCallException(Exception):
 
 class AutoFunctionPropertyBack(object):
 
-    def __init__(self):
+    def __init__(self,value_index):
+        self.value_index=value_index
         self.find_funcs()
     
-    def produce_setter_and_getter(self, value_index):
-        self.value_index = value_index
+    def get_setter_and_getter(self):
         return (self, self.setter_func)
     
     def find_funcs(self):
@@ -62,19 +62,19 @@ class AutoFunctionPropertyBack(object):
     def is_source(self, inst):
         return self.get_value(inst) != None
     
-    def is_conflicting_with_other_source(self,inst):
+    def is_conflicting_with_other_source(self, inst):
         if not self.is_source(inst):
             raise ValueError()
-        backup_value=self.get_value(inst)
+        backup_value = self.get_value(inst)
         self.setter_func(inst, None)
-        result=False
+        result = False
         try:
             self.__call__(inst)
-            result=True
+            result = True
         except LoopCallException:
-            result= False
+            result = False
         finally:
-            self.setter_func(inst,backup_value)
+            self.setter_func(inst, backup_value)
             return result      
         
     def __call__(self, inst):
@@ -133,16 +133,16 @@ class AutoMathFunctionMeta(type):
     def __new__(self, cls_name, bases, attrs):
         new_cls = type.__new__(self, cls_name, bases, attrs)
         all_property_classes = self.get_all_property_classes(new_cls)
-        i = 0
+        value_index = 0
         new_cls.default_auto_func_property_values = []
         new_cls.auto_func_property_backs = []
         for _name, property_cls in all_property_classes:
             new_cls.default_auto_func_property_values.append(property_cls.default())
-            property_name=property_cls.get_property_name()
-            property_back = property_cls()
+            property_name = property_cls.get_property_name()
+            property_back = property_cls(value_index)
             new_cls.auto_func_property_backs.append(property_back)
-            setattr(new_cls, property_name, property(*(property_back.produce_setter_and_getter(i))))
-            i += 1
+            setattr(new_cls, property_name, property(*(property_back.get_setter_and_getter())))
+            value_index += 1
         return new_cls
 
     @classmethod
@@ -157,7 +157,6 @@ class AutoMathFunction(object):
     def __init__(self):
         self._auto_func_property_datas = list(self.default_auto_func_property_values)
         self._auto_func_property_as_functions = [False for _i in xrange(len(self._auto_func_property_datas))]
-    
     def show_status(self):
         print self.status()
     
@@ -174,7 +173,7 @@ class AutoMathFunction(object):
         result += "="*21 + "\n"  
         i = 0
         for property_back in self.get_auto_function_property_backs():
-            name=property_back.get_property_name()
+            name = property_back.get_property_name()
             head_str = None
             value_str = None
             try:
@@ -183,7 +182,7 @@ class AutoMathFunction(object):
                 if property_back.is_source(self):
                     head_str = ori_result_head % name
                     if property_back.is_conflicting_with_other_source(self):
-                        value_str+= "  *CONFILCTING WITH OTHER SOURCE*"
+                        value_str += "  *CONFILCTING WITH OTHER SOURCE*"
                 else:
                     head_str = result_head % name
             except LoopCallException as e:
