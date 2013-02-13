@@ -126,7 +126,9 @@ class AutoFunctionPropertyBack(object):
     def get_property_name(cls):
         class_name = cls.__name__
         if class_name.find(AutoFunctionConstants.COMMON_REAL_CLASS_PRE()) != 0:
-            raise ValueError('class name should begin with"' + AutoFunctionConstants.COMMON_REAL_CLASS_PRE() + '"')
+            raise ValueError('class name should begin with"' 
+                             + AutoFunctionConstants.COMMON_REAL_CLASS_PRE()
+                             + '"')
         return class_name[len(AutoFunctionConstants.COMMON_REAL_CLASS_PRE()):]
 
 class AutoMathFunctionMeta(type):
@@ -148,7 +150,8 @@ class AutoMathFunctionMeta(type):
     @classmethod
     def get_all_property_classes(cls, new_cls):
         clsmembers = inspect.getmembers(sys.modules[new_cls.__module__], inspect.isclass)
-        result = [name_cls for name_cls in clsmembers if name_cls[0].find(AutoFunctionConstants.COMMON_REAL_CLASS_PRE()) == 0]
+        result = [name_cls for name_cls in clsmembers 
+                  if name_cls[0].find(AutoFunctionConstants.COMMON_REAL_CLASS_PRE()) == 0]
         return result
 
 class AutoFunctionPropertyStatus(object):
@@ -217,7 +220,7 @@ class AutoFunctionPropertyStatus(object):
         result = []
         result.append([cls.get_source_head_string(), "property value as source"])
         result.append([cls.get_lack_of_dependence_value_head_string(), "can't get value,"])
-        result.append(["","part of the absent necessary property is shown as value"])
+        result.append(["", "part of the absent necessary property is shown as value"])
         result.append([cls.get_function_value_head_string(), "a function value"])
         return result
     
@@ -226,7 +229,9 @@ class AutoFunction(object):
     
     def __init__(self):
         self._auto_func_property_datas = list(self.default_auto_func_property_values)
-        self._auto_func_property_as_functions = [False for _i in xrange(len(self._auto_func_property_datas))]
+        self._auto_func_property_as_functions = [False 
+                                                 for _i 
+                                                 in xrange(len(self._auto_func_property_datas))]
     def show_status(self):
         print self.status_str()
     
@@ -240,10 +245,10 @@ class AutoFunction(object):
         head_instructions = AutoFunctionPropertyStatus.get_head_and_instructions()
         gap_len = self.get_status_str_gap_len()
         name_len = self.get_max_math_property_names_len()        
-        instruction_template = "%" + str(2+head_len + gap_len + name_len) + "s: %s\n"
+        instruction_template = "%" + str(2 + head_len + gap_len + name_len) + "s: %s\n"
         for head, instr in head_instructions:
             result += instruction_template % (head, instr)
-        result += "="*(2+head_len+name_len+gap_len) + "\n"  
+        result += "="*(2 + head_len + name_len + gap_len) + "\n"  
 
         status_template = "|%" + str(head_len) + "s|%" + str(gap_len + name_len) + "s: %s\n"
         for property_status in self.get_auto_function_property_status():
@@ -257,7 +262,8 @@ class AutoFunction(object):
     
     @classmethod   
     def get_auto_function_property_names(cls):
-        return [property_back.get_property_name() for property_back in cls.auto_func_property_backs]
+        return [property_back.get_property_name() 
+                for property_back in cls.auto_func_property_backs]
     
     @classmethod
     def get_auto_function_property_backs(cls):
